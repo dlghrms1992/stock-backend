@@ -1,0 +1,81 @@
+plugins {
+	id 'org.springframework.boot' version '2.5.0'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+}
+
+group = 'com.invest.success'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	annotationProcessor("org.projectlombok:lombok:1.18.6") 
+}
+
+def webappDir = "$projectDir/stock-app"
+
+sourceSets {
+	main {
+		resources {
+			srcDirs = ["$webappDir/build", "$prohectDir/src/main/resources"]
+		}
+	}
+}
+
+processResources {
+    dependsOn "copyWebApp"
+}
+
+task copyWebApp(type: Copy) {
+    dependsOn "buildReact"
+    from "$webappDir/build"
+    into "$projectDir/src/main/resources/static"
+}
+
+task buildReact(type: Exec) {
+    dependsOn "installReact"
+    workingDir "$webappDir"
+    inputs.dir "$webappDir"
+    group = BasePlugin.BUILD_GROUP
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        commandLine "npm.cmd", "run-script", "build"
+    } else {
+        commandLine "npm", "run-script", "build"
+    }
+}
+
+task installReact(type: Exec) {
+    workingDir "$webappDir"
+    inputs.dir "$webappDir"
+    group = BasePlugin.BUILD_GROUP
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        commandLine "npm.cmd", "audit", "fix"
+        commandLine 'npm.cmd', 'install'
+    } else {
+        commandLine "npm", "audit", "fix"
+        commandLine 'npm', 'install'
+    }
+}
+
+jar {
+
+    baseName = "Invest"
+    version = version
+    manifest {
+        attributes 'Title': 'Invest',
+                   'Version': version,
+                   'Main-Class': 'com.invest.success.InvestSuccessApplication'
+    }
+
+}
+
+
+test {
+	useJUnitPlatform()
+}
